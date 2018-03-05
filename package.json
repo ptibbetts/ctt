@@ -1,0 +1,19 @@
+{
+  "name": "cruise.co.uk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "convert-to-json": "node scripts/convert-to-json.js",
+    "serve": "browser-sync start --server --files 'index.html'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "xlsx-to-json": "^0.3.0"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.23.6"
+  }
+}

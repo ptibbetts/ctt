@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Cruise.co.uk</title>
+</head>
+
+<style>
+  html {
+    box-sizing: border-box;
+  }
+
+  *,
+  *:before,
+  *:after {
+    box-sizing: inherit;
+  }
+
+  body {
+    font-family: Roboto, Verdana, Arial, helvetica, sans-serif;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  .wrapper {
+    margin: 0 auto;
+    max-width: 64rem;
+  }
+
+  .logo {
+    display: block;
+    margin: 1rem auto;
+    max-width: 20rem;
+    width: 100%;
+  }
+
+  #count {
+    margin: 1rem 0;
+    text-align: center
+  }
+
+  #results {
+    margin: 1rem 0;
+  }
+
+  .cruise {
+    background: rgb(251, 251, 251);
+    border: 1px solid #ccc;
+    margin: 1rem 0;
+    padding: 1rem;
+    transition: all 250ms ease;
+  }
+
+  .cruise:hover {
+    border-color: #6b6b6b;
+    box-shadow: 0px 10px 10px 0 #ccc;
+    transform: scale(1.01);
+  }
+
+  .cruise__name {
+    color: rgb(35, 61, 144);
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-decoration: underline;
+    display: inline-block;
+  }
+
+  .cruise__image {
+    width: 100%;
+  }
+
+  .cruise__itinerary {
+    margin: 1rem 0;
+  }
+
+  .cruise__button {
+    background: linear-gradient(rgb(50, 179, 50) 0%, rgb(0, 160, 0) 50%);
+    border: 1px solid rgb(0, 160, 0);
+    display: block;
+    color: white;
+    min-width: 14.5rem;
+    padding: 1rem;
+    text-align: center
+  }
+
+  .cruise__button:hover {
+    background: linear-gradient(to bottom, #00a000 50%, #b2e2b2 100%);
+  }
+
+  @media (min-width: 350px) {
+    .cruise__image {
+      width: auto;
+    }
+  }
+
+  @media (min-width: 967px) {
+    .cruise__header {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .cruise__name {
+      max-width: 45rem;
+    }
+    .cruise__imageWrap {
+      margin-left: auto;
+    }
+    .cruise__footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .cruise__button {
+      display: inline-block;
+    }
+  }
+</style>
+
+<body>
+  <header>
+    <div class="wrapper">
+      <img class="logo" src="assets/CRU-logo-660w.png" alt="Cruise.co.uk logo">
+    </div>
+  </header>
+
+  <main>
+    <div class="wrapper">
+      <div id="count"></div>
+      <div id="results"></div>
+    </div>
+  </main>
+
+  <script>
+    // api and default data
+    const endpoint = 'data.json';
+    const cruises = [];
+    let sortedCruises = [];
+    const displayedCruises = [];
+
+    // pagination for infinite scroll*
+    let page = 0;
+    const perPage = 10;
+
+    // elements
+    const count = document.getElementById('count');
+    const results = document.getElementById('results');
+
+    // add the cruises to the page
+    const displayCruises = () => {
+      const start = page * perPage;
+      const end = start + perPage - 1;
+      for (let i = start; i <= end; i++) {
+        if (sortedCruises[i]) {
+          displayedCruises.push(sortedCruises[i]);
+        }
+      }
+      const html = displayedCruises.map(cruise => {
+        // if the offer name contains / then it's a code
+        const nightsKnown = cruise["Offer Name"].includes('/');
+        let nights;
+        if (nightsKnown) {
+          const array = cruise["Offer Name"].split('/');
+          // and the nights is the last set of numbers of the code
+          nights = array[array.length - 1];
+        }
+        const url = 'http://www.cruise.co.uk/checkAvailability.php?offerId=';
+        return `
+        <div class="cruise">
+          <header>
+            <div class="cruise__header">
+              <span class="cruise__name">
+                ${cruise["Departure Date"]} 
+                ${nightsKnown ? `- ${nights} nights` : ''}
+                - ${cruise["Cruise Ship Name"]}
+              </span>
+              <div class="cruise__imageWrap">
+                <img 
+                  class="cruise__image" 
+                  src="assets/cruise-line-logos/${cruise["Cruise Line Logo"]}" 
+                  alt="${cruise["Cruise Line Name"]} logo"
+                />
+              </div>
+            </div>
+          </header>
+          <div class="cruise__itinerary">
+            ${cruise["Itinerary"] === 'NULL' ? '' : cruise["Itinerary"] }
+          </div>
+          <footer>
+            <div class="cruise__footer">
+              <a 
+                class="cruise__button" 
+                href="${url}${cruise["OfferId"]}"
+              >
+                Check Availability →
+              </a>
+            </div>
+          </footer>
+        </div>
+      `
+      }).join('');
+      count.innerHTML = `There are <b>${cruises.length}</b> results - Showing <b>${displayedCruises.length}</b>`;
+      results.innerHTML = html;
+    }
+
+    // filter the cruises to only those in the future
+    // and sort by date, starting from today
+    const onFetchCruises = (data) => {
+      const allCruises = data;
+      const today = new Date();
+      today.setHours(24, 0, 0, 0); // set today to midnight
+      const months = {
+        January: 1,
+        February: 2,
+        March: 3,
+        April: 4,
+        May: 5,
+        June: 6,
+        July: 7,
+        August: 8,
+        September: 9,
+        October: 10,
+        November: 11,
+        December: 12
+      };
+      allCruises.map(cruise => {
+        const dateAsString = cruise["Departure Date"].split(', ');
+        const [monthName, day] = dateAsString[1].split(' ');
+        const month = months[monthName];
+        const year = dateAsString[2];
+        const date = new Date(year, month - 1, Number(day) - 1); // Date is zero based
+        if (date > today) {
+          cruise.date = date;
+          cruises.push(cruise);
+        }
+      })
+      sortedCruises = cruises.sort((a, b) => a.date > b.date)
+      displayCruises();
+    }
+
+    fetch(endpoint)
+      .then(data => data.json())
+      .then(data => onFetchCruises(data))
+      .catch(err => console.error(err));
+
+    const displayMoreCruises = () => {
+      if (displayedCruises.length === cruises.length) return;
+      page++;
+      displayCruises();
+    }
+
+    // *infinite scroll
+    // because if it's good enough for Twitter
+    // then it's good enough for me
+    window.onscroll = () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) { // at bottom of the page
+        displayMoreCruises();
+      }
+    };
+  </script>
+</body>
+
+</html>
