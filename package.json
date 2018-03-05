@@ -5,13 +5,15 @@
   "main": "index.js",
   "scripts": {
     "convert-to-json": "node scripts/convert-to-json.js",
-    "serve": "browser-sync start --server --files 'index.html'"
+    "serve": "browser-sync start --server --files 'index.html'",
+    "now-start": "serve"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "xlsx-to-json": "^0.3.0"
+    "xlsx-to-json": "^0.3.0",
+    "serve": "latest"
   },
   "devDependencies": {
     "browser-sync": "^2.23.6"
